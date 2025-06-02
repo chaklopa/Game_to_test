@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Arena</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .game-area {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.15);
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin: 5px;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .target-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+            min-height: 300px;
+        }
+
+        .target {
+            aspect-ratio: 1;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            border: 3px solid transparent;
+        }
+
+        .target.active {
+            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+            animation: glow 0.5s ease-in-out;
+        }
+
+        .target.hit {
+            background: linear-gradient(45deg, #51cf66, #40c057);
+            transform: scale(0.9);
+        }
+
+        .target.missed {
+            background: linear-gradient(45deg, #ff6b6b, #e03131);
+            transform: scale(0.9);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(78,205,196,0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .difficulty-selector {
+            margin: 20px 0;
+        }
+
+        .difficulty-btn {
+            background: rgba(255,255,255,0.2);
+            margin: 0 5px;
+            padding: 10px 20px;
+            font-size: 1em;
+        }
+
+        .difficulty-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .leaderboard {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .leaderboard h3 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .score-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .game-over {
+            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255,107,107,0.4); }
+            50% { box-shadow: 0 0 40px rgba(255,107,107,0.8); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .combo-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            opacity: 0;
+            animation: comboShow 1s ease;
+            pointer-events: none;
+        }
+
+        @keyframes comboShow {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ REACTION ARENA ⚡</h1>
+        <p class="subtitle">Test your reflexes and compete for the highest score!</p>
+        
+        <div class="game-area">
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-value" id="score">0</span>
+                    <span class="stat-label">Score</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="combo">0</span>
+                    <span class="stat-label">Combo</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="accuracy">100%</span>
+                    <span class="stat-label">Accuracy</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="time">30</span>
+                    <span class="stat-label">Time Left</span>
+                </div>
+            </div>
+
+            <div class="difficulty-selector">
+                <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+                <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+                <button class="difficulty-btn" data-difficulty="insane">Insane</button>
+            </div>
+
+            <div class="target-grid" id="targetGrid"></div>
+
+            <div class="controls">
+                <button id="startBtn">Start Game</button>
+                <button id="pauseBtn" disabled>Pause</button>
+                <button id="resetBtn">Reset Score</button>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboardList"></div>
+        </div>
+    </div>
+
+    <script>
+        class ReactionArena {
+            constructor() {
+                this.score = 0;
+                this.combo = 0;
+                this.hits = 0;
+                this.misses = 0;
+                this.timeLeft = 30;
+                this.gameActive = false;
+                this.gameTimer = null;
+                this.targetTimer = null;
+                this.currentTarget = null;
+                this.difficulty = 'easy';
+                try {
+                    this.highScores = JSON.parse(localStorage.getItem('reactionArenaScores') || '[]');
+                } catch (e) {
+                    this.highScores = [];
+                }
+                
+                this.difficulties = {
+                    easy: { speed: 2000, duration: 1500 },
+                    medium: { speed: 1500, duration: 1200 },
+                    hard: { speed: 1000, duration: 800 },
+                    insane: { speed: 700, duration: 500 }
+                };
+
+                this.initializeGrid();
+                this.updateDisplay();
+                this.updateLeaderboard();
+                this.bindEvents();
+            }
+
+            initializeGrid() {
+                const grid = document.getElementById('targetGrid');
+                grid.innerHTML = '';
+                for (let i = 0; i < 16; i++) {
+                    const target = document.createElement('div');
+                    target.className = 'target';
+                    target.dataset.index = i;
+                    target.addEventListener('click', (e) => this.targetClicked(e));
+                    grid.appendChild(target);
+                }
+            }
+
+            bindEvents() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startGame());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pauseGame());
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetScores());
+                
+                document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.setDifficulty(e.target.dataset.difficulty));
+                });
+            }
+
+            setDifficulty(level) {
+                if (this.gameActive) return;
+                
+                this.difficulty = level;
+                document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-difficulty="${level}"]`).classList.add('active');
+            }
+
+            startGame() {
+                this.gameActive = true;
+                this.score = 0;
+                this.combo = 0;
+                this.hits = 0;
+                this.misses = 0;
+                this.timeLeft = 30;
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                
+                this.updateDisplay();
+                this.gameTimer = setInterval(() => this.updateTimer(), 1000);
+                this.spawnTarget();
+            }
+
+            pauseGame() {
+                this.gameActive = false;
+                clearInterval(this.gameTimer);
+                clearTimeout(this.targetTimer);
+                
+                if (this.currentTarget) {
+                    this.currentTarget.classList.remove('active');
+                    this.currentTarget = null;
+                }
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+            }
+
+            endGame() {
+                this.gameActive = false;
+                clearInterval(this.gameTimer);
+                clearTimeout(this.targetTimer);
+                
+                if (this.currentTarget) {
+                    this.currentTarget.classList.remove('active');
+                    this.currentTarget = null;
+                }
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                
+                this.saveScore();
+                this.showGameOver();
+            }
+
+            spawnTarget() {
+                if (!this.gameActive) return;
+                
+                const targets = document.querySelectorAll('.target');
+                const randomIndex = Math.floor(Math.random() * targets.length);
+                this.currentTarget = targets[randomIndex];
+                this.currentTarget.classList.add('active');
+                
+                const config = this.difficulties[this.difficulty];
+                
+                setTimeout(() => {
+                    if (this.currentTarget && this.currentTarget.classList.contains('active')) {
+                        this.missTarget();
+                    }
+                }, config.duration);
+                
+                this.targetTimer = setTimeout(() => this.spawnTarget(), config.speed);
+            }
+
+            targetClicked(e) {
+                if (!this.gameActive || !e.target.classList.contains('active')) return;
+                
+                this.hitTarget(e.target);
+            }
+
+            hitTarget(target) {
+                target.classList.remove('active');
+                target.classList.add('hit');
+                setTimeout(() => target.classList.remove('hit'), 300);
+                
+                this.hits++;
+                this.combo++;
+                this.score += this.combo * 10;
+                this.currentTarget = null;
+                
+                if (this.combo >= 5) {
+                    this.showCombo();
+                }
+                
+                this.updateDisplay();
+            }
+
+            missTarget() {
+                if (this.currentTarget) {
+                    this.currentTarget.classList.remove('active');
+                    this.currentTarget.classList.add('missed');
+                    setTimeout(() => this.currentTarget.classList.remove('missed'), 300);
+                    this.currentTarget = null;
+                }
+                
+                this.misses++;
+                this.combo = 0;
+                this.updateDisplay();
+            }
+
+            showCombo() {
+                const comboEl = document.createElement('div');
+                comboEl.className = 'combo-display';
+                comboEl.textContent = `${this.combo}x COMBO!`;
+                document.body.appendChild(comboEl);
+                setTimeout(() => comboEl.remove(), 1000);
+            }
+
+            updateTimer() {
+                this.timeLeft--;
+                this.updateDisplay();
+                
+                if (this.timeLeft <= 0) {
+                    this.endGame();
+                }
+            }
+
+            updateDisplay() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('combo').textContent = this.combo;
+                document.getElementById('time').textContent = this.timeLeft;
+                
+                const totalAttempts = this.hits + this.misses;
+                const accuracy = totalAttempts > 0 ? 
+                    Math.round((this.hits / totalAttempts) * 100) : 100;
+                document.getElementById('accuracy').textContent = accuracy + '%';
+            }
+
+            saveScore() {
+                const totalAttempts = this.hits + this.misses;
+                const accuracy = totalAttempts > 0 ? 
+                    Math.round((this.hits / totalAttempts) * 100) : 100;
+                    
+                const newScore = {
+                    score: this.score,
+                    accuracy: accuracy,
+                    difficulty: this.difficulty,
+                    date: new Date().toLocaleDateString()
+                };
+                
+                this.highScores.push(newScore);
+                this.highScores.sort((a, b) => b.score - a.score);
+                this.highScores = this.highScores.slice(0, 5);
+                
+                try {
+                    localStorage.setItem('reactionArenaScores', JSON.stringify(this.highScores));
+                } catch (e) {
+                    console.log('localStorage not available');
+                }
+                
+                this.updateLeaderboard();
+            }
+
+            updateLeaderboard() {
+                const list = document.getElementById('leaderboardList');
+                list.innerHTML = '';
+                
+                if (this.highScores.length === 0) {
+                    list.innerHTML = '<div class="score-entry">No scores yet - start playing!</div>';
+                    return;
+                }
+                
+                this.highScores.forEach((score, index) => {
+                    const entry = document.createElement('div');
+                    entry.className = 'score-entry';
+                    entry.innerHTML = `
+                        <span>#${index + 1} - ${score.score} pts (${score.difficulty})</span>
+                        <span>${score.accuracy}% - ${score.date}</span>
+                    `;
+                    list.appendChild(entry);
+                });
+            }
+
+            resetScores() {
+                this.highScores = [];
+                try {
+                    localStorage.removeItem('reactionArenaScores');
+                } catch (e) {
+                    // Handle storage unavailable
+                }
+                this.updateLeaderboard();
+            }
+
+            showGameOver() {
+                const totalAttempts = this.hits + this.misses;
+                const finalAccuracy = totalAttempts > 0 ? 
+                    Math.round((this.hits / totalAttempts) * 100) : 100;
+                    
+                const gameOver = document.createElement('div');
+                gameOver.className = 'game-over';
+                gameOver.innerHTML = `
+                    <h2>🎮 Game Over!</h2>
+                    <p>Final Score: <strong>${this.score}</strong></p>
+                    <p>Accuracy: <strong>${finalAccuracy}%</strong></p>
+                    <p>Difficulty: <strong>${this.difficulty.toUpperCase()}</strong></p>
+                `;
+                
+                document.querySelector('.game-area').appendChild(gameOver);
+                setTimeout(() => gameOver.remove(), 5000);
+            }
+        }
+
+        // Initialize the game
+        new ReactionArena();
+    </script>
+</body>
+</html>
